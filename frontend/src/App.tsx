@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { w3cwebsocket as W3CWebSocket } from "websocket";
 import BandwidthRtc, { RtcStream } from "@bandwidth/webrtc-browser";
 
 import Box from "@mui/material/Box";
-import { ThemeProvider } from "@mui/styles";
+import { ThemeProvider } from "@mui/material/styles";
 
 import Keypad from "./components/keypad";
 import ConnectedTo from "./components/connectedto";
@@ -20,6 +20,12 @@ import myTheme from "./base/mytheme";
 const client = new W3CWebSocket(`ws://${window.location.hostname.toString()}:8001`);
 const bandwidthRtc = new BandwidthRtc();
 
+/**
+ * note - it appears that some stuff you can create and apply as classes, and some that can't be
+ * handled that way.  There are a few cases below where using the system props sx= is the only way
+ * to achieve the result.  Somebody that is better at material UI might have better luck.
+ */
+
 function App() {
   const [clientState, setClientState] = useState<ClientStates>(ClientStates.Disconnected);
   const [myTn, setMyTn] = useState<string>();
@@ -33,9 +39,13 @@ function App() {
   // This state variable holds the remote stream object - the audio from the far end
   const [remoteStream, setRemoteStream] = useState<RtcStream>();
 
-  const runningTimer = useRef<any>(0);
+  const runningTimer = useRef<any>(0); // for DTMF timeout.
   const ringing = useRef<any>(new Audio("ringing.mp3"));
 
+  /**
+   * Establish a media control connection to the Bandwidth WebRTC platform
+   * @param token - the Participant token to be used in the connect()
+   */
   const connectToSession = (token: string | undefined) => {
     if (token) {
       // Connect to Bandwidth WebRTC
@@ -55,6 +65,10 @@ function App() {
     }
   };
 
+  /**
+   * Establish the two listner callbacks for the appearance and
+   * disappearance of media streams from the media servers
+   */
   const createStreamListeners = () => {
     // This event will fire any time a new stream is sent to us
     bandwidthRtc.onStreamAvailable((rtcStream: RtcStream) => {
@@ -69,6 +83,15 @@ function App() {
     });
   };
 
+  /**
+   * a logging utility for key elements of the client state
+   * @param header - informative text if needed
+   * @param clientState - the formal state that the client is in
+   * @param token - the security token assigned by the server
+   * @param myTn - the local TN assigned by the server
+   * @param tnToDial - the TN that will be dialled on placing a call
+   * @param wsExists - whether there is a websocket
+   */
   const dumpClientStateValues = (
     header: string,
     clientState: ClientStates,
@@ -85,6 +108,11 @@ function App() {
     }
   };
 
+  /**
+   * A utility function to handle inbound server websocket messages to
+   * handle events and state changes that happen in the server / network.
+   * @param message - the message received by the Client from the server
+   */
   const handleServerMessage = (message: any) => {
     const parsedMessage: ClientEvent = JSON.parse(message.data.toString());
     console.log(`${parsedMessage.event} message received`);
@@ -101,25 +129,26 @@ function App() {
         break;
       }
       case ClientEvents.CallIn: {
-        outsideWorldHappened(ClientEvents.CallIn);
+        serverEventHappened(ClientEvents.CallIn);
         setFarEndTn(parsedMessage.body.tn);
         ringing.current.play();
         break;
       }
       case ClientEvents.ClientDisconnected: {
-        outsideWorldHappened(ClientEvents.ClientDisconnected);
+        serverEventHappened(ClientEvents.ClientDisconnected);
         setInfoMessage(parsedMessage.body.message);
         break;
       }
       case ClientEvents.FarAnswer: {
-        outsideWorldHappened(ClientEvents.FarAnswer);
+        serverEventHappened(ClientEvents.FarAnswer);
         setTnToDial("");
         setFarEndTn(parsedMessage.body.tn);
         break;
       }
       case ClientEvents.FarAbandon: {
-        outsideWorldHappened(ClientEvents.FarAbandon);
+        serverEventHappened(ClientEvents.FarAbandon);
         setFarEndTn("");
+        setTnToDial("");
         ringing.current.pause();
         break;
       }
@@ -132,7 +161,6 @@ function App() {
     client.onopen = () => {
       console.log("WebSocket Client Connected");
     };
-    // TODO - what about onclose ???
     client.onmessage = handleServerMessage;
     client.onclose = () => {
       console.log("WebSocket Client connection closed");
@@ -141,6 +169,9 @@ function App() {
     createStreamListeners();
   });
 
+  /**
+   * handle DTMF timer expiry state changes.
+   */
   useEffect(() => {
     if (clientState === ClientStates.Talking && dtmfIt) {
       bandwidthRtc.sendDtmf(tnToDial);
@@ -153,6 +184,13 @@ function App() {
     }
   }, [dtmfIt, clientState, tnToDial]);
 
+  /**
+   * props function to update the register containing digits to dial or use to send DTMF
+   * Invoked when the UI TN values are changed in the textbox or via the keypad.
+   * @param digits - the new digits to add to the TN that we will dial
+   * @param append - true if the new digits are to be appended to the current set,
+   *                 otherwise the new digits replace any that are there
+   */
   const tnUpdate = (digits: string, append: boolean) => {
     const tn = append ? tnToDial + digits : digits;
     if (clientState === ClientStates.Talking) {
@@ -168,17 +206,21 @@ function App() {
       setTnToDial(tn);
       let newState;
       if (tn && tnValid(tn) && clientState === ClientStates.IdleInvalid) {
-        // assume valid for now - should likely doublecheck
-        console.log("setting the state to Valid (in theory");
+        console.log("setting the TN Idle state to Valid");
         newState = updateState(clientState, ClientEvents.GoodTn);
       } else if ((!tn || !tnValid(tn)) && clientState === ClientStates.IdleValid) {
-        console.log("setting the state to INVALID (in theory");
+        console.log("setting the TN idle state to INVALID");
         newState = updateState(clientState, ClientEvents.BadTn);
       }
       if (newState) setClientState(newState);
     }
   };
 
+  /**
+   * props function to handle the activation of the 'call' button, which is really
+   * just the button that is used for all major actions on the client - call, answer
+   * and hang up.
+   */
   const callButtonPress = () => {
     if (clientState !== ClientStates.Disconnected) {
       // we need tn and ws in case the state update triggers a message to the server
@@ -188,12 +230,17 @@ function App() {
     }
   };
 
-  const outsideWorldHappened = (event: ClientEvents, body?: any) => {
+  /**
+   * This utility function is used to encapsulate the handling of events from
+   * the server.
+   * @param event - the outside world event that happened, and
+   * @param body - the body of the message associated with that event
+   */
+  const serverEventHappened = (event: ClientEvents, body?: any) => {
     if (!ws) console.log("Missing Websocket");
     if (clientState && ws) {
       const cs = updateState(clientState, event, tnToDial, ws);
       if (!cs) {
-        // button pressed in a state where it has no meaning (the no digits state)
         console.log("Server event invalid at this time: ", event);
       } else {
         setClientState(cs);
@@ -201,13 +248,15 @@ function App() {
     }
   };
 
+  // sorry that I could not figure out how to get MUI to style the components
+  // below without using sx=.  perhaps in another life.
   return (
     <ThemeProvider theme={myTheme}>
       <div>
         <Box
           sx={{
             display: "flex",
-            p: 5,
+            p: 3,
             justifyContent: "center",
             bgcolor: "#9090D0",
             fontSize: 28,
@@ -218,9 +267,8 @@ function App() {
         <Box
           sx={{
             display: "grid",
-            p: 1,
+            p: 3,
             justifyContent: "center",
-            //   bgcolor: "#707070",
           }}
         >
           <Tns myTn={myTn} otherEndTn={farEndTn} callState={clientState} />
@@ -228,7 +276,6 @@ function App() {
           <ConnectedTo callState={clientState} phoneNumber={tnToDial} updateTn={tnUpdate} />
           <Keypad onPress={tnUpdate} />
           <CallStatus callState={clientState} remoteStream={remoteStream} message={infoMessage} />
-          {/* <OutsideWorldEvent registerEvent={outsideWorldHappened} /> */}
         </Box>
       </div>
     </ThemeProvider>

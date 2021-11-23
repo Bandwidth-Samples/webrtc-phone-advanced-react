@@ -1,30 +1,34 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Button from "@mui/material/Button";
 import myTheme from "../base/mytheme";
 import { ThemeProvider } from "@mui/material/styles";
 import { ClientStates } from "../base/localtypes";
 
-// const enum ClientStates {
-//   IdleInvalid = "Idle - TN Invalid",
-//   IdleValid = "Idle - TN Valid",
-//   Incoming = "Receiving Call",
-//   Outgoing = "Placing Call",
-//   Talking = "Talking",
-// }
+interface CallButtonProps {
+  callState: ClientStates;
+  onClick(): void;
+}
 
-const CallButton = (props: any) => {
+const CallButton = (props: CallButtonProps) => {
   const [state, setState] = useState<ClientStates>(props.callState);
+
+  const buttonText = (): string => {
+    const btext: string =
+      state === ClientStates.IdleValid
+        ? "Call"
+        : state === ClientStates.Incoming
+        ? "Answer"
+        : state === ClientStates.Talking || state === ClientStates.Outgoing
+        ? "Hang Up"
+        : ". . .";
+    return btext;
+  };
+
   if (state !== props.callState) setState(props.callState);
   return (
     <ThemeProvider theme={myTheme}>
       <Button variant="outlined" fullWidth onClick={props.onClick}>
-        {state === ClientStates.IdleValid
-          ? "Call"
-          : state === ClientStates.Incoming
-          ? "Answer"
-          : state === ClientStates.Talking || state === ClientStates.Outgoing
-          ? "Hang Up"
-          : ". . ."}
+        {buttonText()}
       </Button>
     </ThemeProvider>
   );

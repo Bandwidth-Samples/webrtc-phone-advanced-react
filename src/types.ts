@@ -3,7 +3,7 @@ interface ClientEvent {
   body?: any;
 }
 
-interface AgentMessage {
+interface ClientAction {
   event: SystemEvents;
   body?: any;
 }
@@ -22,10 +22,10 @@ const enum ClientEvents {
 
 // things that the client can do to the backend
 const enum SystemEvents {
-  registration = "Agent Registering",
-  calling = "Placing a call",
-  answering = "Answering a call",
-  hangingUp = "Ending a call",
+  Registration = "Agent Registering",
+  Calling = "Placing a call",
+  Answering = "Answering a call",
+  HangingUp = "Ending a call",
 }
 
 const enum AgentState {
@@ -37,4 +37,4 @@ const enum AgentState {
   talking = "Talking",
 }
 
-export { AgentState, ClientEvent, AgentMessage, ClientEvents, SystemEvents };
+export { AgentState, ClientEvent, ClientAction, ClientEvents, SystemEvents };

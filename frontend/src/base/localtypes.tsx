@@ -1,26 +1,12 @@
-// import { w3cwebsocket as W3CWebSocket } from "websocket";
-
-// TODO - get rid of the ClientState
-// interface ClientState {
-//   connected: boolean;
-//   token?: string;
-//   myTn?: string;
-//   tnToDial?: string;
-//   callState?: ClientStates;
-//   ws?: W3CWebSocket;
-// }
-
-// rename
+// An event that can happen to the frontend client,
 interface ClientEvent {
   event: ClientEvents;
   body?: any;
 }
 
-// represents the entire bi-directional event space - to and from the client
-// TODO - change this to use two messages - one from and on to the Client
-interface AgentMessage {
+// a message from the Client to the Server
+interface ClientAction {
   event: SystemEvents;
-  // tn?: string; // ugh - derived from context
   body?: any;
 }
 
@@ -48,21 +34,12 @@ const enum ClientStates {
 
 // things that the client can do to the backend
 const enum SystemEvents {
-  registration = "Agent Registering",
-  // initialized = "Agent Initialized",
-  // interconnected = "Connected to Voice",
-  calling = "Placing a call",
-  answering = "Answering a call",
-  hangingUp = "Ending a call",
-  // farEndCalling = "Incoming Call",
-  // farEndAnswer = "Phone Answered",
-  // farEndHangup = "Far End Hung Up",
+  Registration = "Agent Registering",
+  Calling = "Placing a call",
+  Answering = "Answering a call",
+  HangingUp = "Ending a call",
 }
 
-export type {
-  // ClientState,
-  ClientEvent,
-  AgentMessage,
-};
+export type { ClientEvent, ClientAction };
 
 export { ClientEvents, ClientStates, SystemEvents };

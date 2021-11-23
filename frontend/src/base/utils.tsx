@@ -1,49 +1,20 @@
 import { w3cwebsocket as W3CWebSocket } from "websocket";
-import {
-  ClientStates,
-  ClientEvents,
-  // ClientState,
-  SystemEvents,
-  AgentMessage,
-} from "./localtypes";
+import { ClientStates, ClientEvents, SystemEvents, ClientAction } from "./localtypes";
 
 interface Transition {
   currentState: ClientStates;
   nextState: ClientStates;
   triggerEvent: ClientEvents;
-  systemEvent?: SystemEvents;
+  systemEvent?: SystemEvents; // System events that are triggered by a state change
 }
 
+// the collection of all valid transitions from one client state to another
 let transitions: Array<Transition> = [];
 
-// const enum ClientEvents {
-//   ClientConnected = "Client Connected",
-//   BadTn = "TN Invalidated",
-//   GoodTn = "TN Validated",
-//   CallIn = "Incoming Call",
-//   FarAnswer = "Far end Answer",
-//   FarAbandon = "Abandon",
-//   CallButton = "Call Button Pressed",
-// }
-
-// // States that the front end can be in
-// const enum ClientStates {
-//   Disconnected = "Idle - Disconnected",
-//   IdleInvalid = "Idle - TN Invalid",
-//   IdleValid = "Idle - TN Valid",
-//   Incoming = "Receiving Call",
-//   Outgoing = "Placing Call",
-//   Talking = "Talking",
-// }
-
-// // things that the client can do to the backend
-// const enum SystemEvents {
-//   registration = "Agent Registering",
-//   calling = "Placing a call",
-//   answering = "Answering a call",
-//   hangingUp = "Ending a call",
-// }
-
+/**
+ * initTransitions populates the collection of state transitions
+ * with all of the known valid transitions
+ */
 const initTransitions = () => {
   // initializing
   transitions.push({
@@ -99,28 +70,39 @@ const initTransitions = () => {
     currentState: ClientStates.IdleValid,
     nextState: ClientStates.Outgoing,
     triggerEvent: ClientEvents.CallButton,
-    systemEvent: SystemEvents.calling,
+    systemEvent: SystemEvents.Calling,
   });
   transitions.push({
     currentState: ClientStates.Incoming,
     nextState: ClientStates.Talking,
     triggerEvent: ClientEvents.CallButton,
-    systemEvent: SystemEvents.answering,
+    systemEvent: SystemEvents.Answering,
   });
   transitions.push({
     currentState: ClientStates.Outgoing,
     nextState: ClientStates.IdleValid,
     triggerEvent: ClientEvents.CallButton,
-    systemEvent: SystemEvents.hangingUp,
+    systemEvent: SystemEvents.HangingUp,
   });
   transitions.push({
     currentState: ClientStates.Talking,
     nextState: ClientStates.IdleValid,
     triggerEvent: ClientEvents.CallButton,
-    systemEvent: SystemEvents.hangingUp,
+    systemEvent: SystemEvents.HangingUp,
   });
 };
 
+/**
+ * Execute a client state transition, and if appropriate, send a message to the server
+ * to indicate that transition.
+ * @param currentClientState - the state that the client is currently in
+ * @param theEvent - an event that will cause a state transition
+ * @param tnToDial - a TN that might be needed in server-side messaging for some
+ * state transitions
+ * @param ws - the ws to use to message the server for some state transitions
+ * @returns - a new current state value, or undefined if the  event and
+ * currentClientState value pair indicate an invalid transition
+ */
 const updateState = (
   currentClientState: ClientStates,
   theEvent: ClientEvents,
@@ -132,28 +114,41 @@ const updateState = (
     return item.currentState === currentClientState && item.triggerEvent === theEvent;
   });
   if (trans) {
-    nextState = trans?.nextState;
-    // TODO - factor this out - it is ugly here.
+    // ugh - special case for the state where the tnToDial impacts the state,
+    // done to avoid state transitions from all states to valid TN and invalid TN
+    nextState =
+      trans.nextState === ClientStates.IdleValid && !tnValid(tnToDial)
+        ? ClientStates.IdleInvalid
+        : trans.nextState === ClientStates.IdleInvalid && tnValid(tnToDial)
+        ? ClientStates.IdleValid
+        : trans.nextState;
     if (trans.systemEvent && ws) {
-      // just always send the TN even if it is not needed
       sendSystemEvent(trans.systemEvent, ws, { tn: tnToDial });
     }
-    // if we are transitioning states we sometimes need to tell the Server
-    // this is typically when we have hit the main button, which has a context-dependent
-    // meaning
   } else {
     console.log("state transition invalid: ", currentClientState, theEvent);
   }
   return nextState;
 };
 
+/**
+ * check a TN for 10D syntactic validity
+ * @param tn - the tn to check for syntactic validity
+ * @returns - yup or nope :-)
+ */
 const tnValid = (tn?: string): boolean => {
   return tn !== undefined && tn.match(/^[2-9][0-9]{9}$/) !== null;
 };
 
+/**
+ * A helper to send messages over the webSocket to the Server
+ * @param systemEvent - the event to send to the Server
+ * @param ws - the websocket to use when sending the event
+ * @param body - the message body
+ */
 const sendSystemEvent = (systemEvent: SystemEvents, ws?: W3CWebSocket, body?: any) => {
   if (!ws) throw new Error("missing websocket");
-  const data: AgentMessage = {
+  const data: ClientAction = {
     event: systemEvent,
     body: body,
   };

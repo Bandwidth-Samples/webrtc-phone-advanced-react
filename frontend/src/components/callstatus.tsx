@@ -4,23 +4,37 @@ import myTheme from "../base/mytheme";
 import { ThemeProvider } from "@mui/material/styles";
 import { ClientStates } from "../base/localtypes";
 import Alert from "@mui/material/Alert";
+import { RtcStream } from "@bandwidth/webrtc-browser";
 
-const CallStatus = (props: any) => {
-  const { callState, remoteStream } = props;
+interface CallStatusProps {
+  callState: ClientStates;
+  remoteStream: RtcStream | undefined;
+  message: string | undefined;
+}
+
+const CallStatus = (props: CallStatusProps) => {
+  const { callState, remoteStream, message } = props;
+
+  const buttonText = (): string => {
+    const btext: string =
+      callState === ClientStates.Disconnected
+        ? "Disconnected"
+        : callState === ClientStates.Incoming
+        ? "Incoming Call"
+        : callState === ClientStates.Talking
+        ? "In a Call"
+        : callState === ClientStates.Outgoing
+        ? "Placing a Call"
+        : "Idle";
+    return btext;
+  };
+
   return (
     <ThemeProvider theme={myTheme}>
       <Button variant="outlined" fullWidth disabled>
-        {callState === ClientStates.Disconnected
-          ? "Disconnected"
-          : callState === ClientStates.Incoming
-          ? "Incoming Call"
-          : callState === ClientStates.Talking
-          ? "In a Call"
-          : callState === ClientStates.Outgoing
-          ? "Placing a Call"
-          : "Idle"}
+        {buttonText()}
       </Button>
-      {props.message ? <Alert severity="info">{props.message}</Alert> : null}
+      {message ? <Alert severity="info">{message}</Alert> : null}
       <video
         playsInline
         autoPlay

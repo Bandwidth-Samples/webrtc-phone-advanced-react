@@ -2,20 +2,27 @@ import TextField from "@mui/material/TextField";
 import myTheme from "../base/mytheme";
 
 import { ClientStates } from "../base/localtypes";
-import { ThemeProvider } from "@mui/material/styles";
+import { ThemeProvider, Theme } from "@mui/material/styles";
+import { makeStyles, createStyles } from "@mui/styles";
+
+const useStyles: any = makeStyles((theme: Theme) =>
+  createStyles({
+    tnsContainer: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "flex-start",
+      color: "blue",
+    },
+  })
+);
 
 const Tns = (props: any) => {
+  const classes = useStyles();
+
   return (
     <ThemeProvider theme={myTheme}>
       <div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "left",
-            color: "blue",
-          }}
-        >
+        <div className={classes.tnsContainer}>
           <TextField
             id={`my-number`}
             label="My TN"

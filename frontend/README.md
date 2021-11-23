@@ -34,20 +34,20 @@
 
 ### (Temporary) Data
 
-- calls made
-- calls received
+- calls made (TODO)
+- calls received (TODO)
 - current call state [idle, calling, receiving, in-call]
 
 ## Design Considerations
 
-- multi-user
+- multi-user (single user for now)
 - temporary data only - only while the user is active
 - one call at a time
 - websockets interface to the server for real-time user/server interaction
 - server-side master data...
   - received calls
   - made calls
-  - phone number / participant / webSocket / callId / callState / session / interconnect leg map
+  - phone number / participant / webSocket / callId / callState / session / interconnect leg map (when multi-party)
 
 # React App background
 

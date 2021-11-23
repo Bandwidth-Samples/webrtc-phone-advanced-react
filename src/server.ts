@@ -1,6 +1,6 @@
 import path from "path";
 import dotenv from "dotenv";
-import express, { response } from "express";
+import express from "express";
 import WebSocket from "ws";
 
 import {
@@ -10,7 +10,6 @@ import {
   Client as VoiceClient,
   ApiController as VoiceController,
   Response,
-  State1Enum,
   ModifyCallRequest,
   StateEnum,
   SpeakSentence,
@@ -18,16 +17,13 @@ import {
 } from "@bandwidth/voice";
 import {
   Client as WebRtcClient,
-  Session,
   Participant,
   PublishPermissionEnum,
-  Subscriptions,
   ApiController as WebRtcController,
   DeviceApiVersionEnum,
-  Environment,
 } from "@bandwidth/webrtc";
 
-import { AgentState, ClientEvent, AgentMessage, ClientEvents, SystemEvents } from "./types";
+import { AgentState, ClientEvent, ClientAction, ClientEvents, SystemEvents } from "./types";
 
 // ------------------------------ TYPES ----------------------------------
 
@@ -177,9 +173,9 @@ wss.on("connection", async function connection(ws, req) {
   await establishVoiceTunnel(accountId, agent, `${voiceCallbackUrl}/tunnelanswer`);
 
   ws.on("message", async function incoming(messageBuffer) {
-    const message: AgentMessage = JSON.parse(messageBuffer.toString());
+    const message: ClientAction = JSON.parse(messageBuffer.toString());
     switch (message.event) {
-      case SystemEvents.calling:
+      case SystemEvents.Calling:
         if (message.body?.tn) {
           console.log("<<< Trying to place a call to: ", message.body.tn);
           const voiceCallId = await initiateVoiceCall(agent, message.body.tn);
@@ -187,13 +183,13 @@ wss.on("connection", async function connection(ws, req) {
           agent.agentState = AgentState.placingCall;
         }
         break;
-      case SystemEvents.answering:
+      case SystemEvents.Answering:
         console.log("<<< Answering an inbound voice call");
         await initiateTunnelRedirectForBridging(agent.voiceTunnel?.callId);
         break;
-      case SystemEvents.hangingUp:
+      case SystemEvents.HangingUp:
         // abandon or hanging up
-        console.log(">>> The Web Client is hanging up the call");
+        console.log("<<< The Web Client is hanging up the call");
         await deleteFarEndCall(agent);
         break;
       default:

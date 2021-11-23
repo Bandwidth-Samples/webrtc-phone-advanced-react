@@ -7,6 +7,7 @@ const useStyles: any = makeStyles((theme: Theme) =>
   createStyles({
     tableRow: {
       height: 100,
+      width: 300,
     },
   })
 );
@@ -20,48 +21,40 @@ const Keypad = (props: any) => {
     props.onPress(butt, true);
   };
 
-  const buttons = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"];
+  const displayCell = (char: string) => {
+    return (
+      <TableCell width={100} align="center" key={`tcol${char}`}>
+        <Button
+          key={`butt_${char}`}
+          onClick={() => {
+            onClickButton(char);
+          }}
+        >
+          {char}
+        </Button>
+      </TableCell>
+    );
+  };
+  const buttons = [
+    ["1", "2", "3"],
+    ["4", "5", "6"],
+    ["7", "8", "9"],
+    ["*", "0", "#"],
+  ];
 
   return (
     <div>
       <ThemeProvider theme={myTheme}>
         <Table>
           <TableBody>
-            {buttons.map((char, index, array) => {
-              return index % 3 === 0 ? (
-                <TableRow className={classes.tableRow} key={`trow${char}${index}`}>
-                  <TableCell width={100} align="center">
-                    <Button
-                      key={`butt_${array[index]}`}
-                      onClick={() => {
-                        onClickButton(char);
-                      }}
-                    >
-                      {char}
-                    </Button>
-                  </TableCell>
-                  <TableCell width={100} align="center">
-                    <Button
-                      key={`butt_${array[index + 1]}`}
-                      onClick={() => {
-                        onClickButton(array[index + 1]);
-                      }}
-                    >
-                      {array[index + 1]}
-                    </Button>
-                  </TableCell>
-                  <TableCell width={100} align="center">
-                    <Button
-                      key={`butt_${array[index + 2]}`}
-                      onClick={() => {
-                        onClickButton(array[index + 2]);
-                      }}
-                    >
-                      {array[index + 2]}
-                    </Button>
-                  </TableCell>
+            {buttons.map((row) => {
+              return (
+                <TableRow className={classes.tableRow} key={`trow${row[0]}`}>
+                  {row.map((char) => {
+                    return displayCell(char);
+                  })}
                 </TableRow>
-              ) : null;
+              );
             })}
           </TableBody>
         </Table>

@@ -6,12 +6,35 @@ import CallReceived from "@mui/icons-material/CallReceived";
 import PhoneInTalk from "@mui/icons-material/PhoneInTalk";
 import myTheme from "../base/mytheme";
 import { tnValid } from "../base/utils";
-import { ThemeProvider } from "@mui/material/styles";
+import { ThemeProvider, Theme } from "@mui/material/styles";
+import { makeStyles, createStyles } from "@mui/styles";
 import { ClientStates } from "../base/localtypes";
 
-const ConnectedTo = (props: any) => {
+const useStyles: any = makeStyles((theme: Theme) =>
+  createStyles({
+    wideIcon: { transform: "scale(1.5)", width: 100 },
+    narrowIcon: { transform: "scale(1.5)", width: 50 },
+    tnEntryField: { flexGrow: 2 },
+    connectedToContainer: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "flex-start",
+      color: "blue",
+    },
+  })
+);
+
+interface ConnectedToProps {
+  callState: ClientStates;
+  phoneNumber: string;
+  updateTn(tn: string, update: boolean): void;
+}
+
+const ConnectedTo = (props: ConnectedToProps) => {
   const [tn, setTn] = useState(props.phoneNumber);
   const [looksBad, setLooksBad] = useState<boolean>(tnValid(props?.phoneNumber));
+
+  const classes = useStyles();
 
   useEffect(() => {
     if (props.phoneNumber !== tn) {
@@ -20,6 +43,44 @@ const ConnectedTo = (props: any) => {
     }
   }, [tn, props.phoneNumber]);
 
+  /**
+   * pick the phone and arrow Icons that are displayed beside the dialed TN field
+   * based on the client state.
+   *
+   * note - establishing a className replacement for the sx= was too hard for my limited
+   * understanding of mui.  I reverted to in-line updates.
+   */
+  const chooseAndDisplayIcons = () => {
+    if (props.callState === ClientStates.IdleValid || props.callState === ClientStates.IdleInvalid) {
+      return (
+        <React.Fragment>
+          <Phone sx={{ transform: "scale(1.5)", width: 100 }} />
+        </React.Fragment>
+      );
+    } else if (props.callState === ClientStates.Incoming) {
+      return (
+        <React.Fragment>
+          <Phone sx={{ transform: "scale(1.5)", width: 50 }} />
+          <CallReceived sx={{ transform: "scale(1.5)", width: 50 }} />
+        </React.Fragment>
+      );
+    } else if (props.callState === ClientStates.Outgoing) {
+      return (
+        <React.Fragment>
+          <Phone sx={{ transform: "scale(1.5)", width: 50 }} />
+          <CallMade sx={{ transform: "scale(1.5)", width: 50 }} />
+        </React.Fragment>
+      );
+    } else if (props.callState === ClientStates.Talking) {
+      return (
+        <React.Fragment>
+          <PhoneInTalk sx={{ transform: "scale(1.5)", width: 100 }} />
+        </React.Fragment>
+      );
+    }
+    return null;
+  };
+
   const updateTn = (element: React.ChangeEvent<HTMLInputElement>) => {
     const tnCandidate = element.target.value;
     setTn(tnCandidate);
@@ -27,41 +88,14 @@ const ConnectedTo = (props: any) => {
     props.updateTn(tnCandidate, false);
   };
 
+  // TODO remove the commented stuff below when tested.
   return (
     <ThemeProvider theme={myTheme}>
       <div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-start",
-            color: "blue",
-          }}
-        >
-          {(props.callState === ClientStates.IdleValid || props.callState === ClientStates.IdleInvalid) && (
-            <React.Fragment>
-              <Phone sx={{ transform: "scale(1.5)", width: 100 }} />
-            </React.Fragment>
-          )}
-          {props.callState === ClientStates.Incoming && (
-            <React.Fragment>
-              <Phone sx={{ transform: "scale(1.5)", width: 50 }} />
-              <CallReceived sx={{ transform: "scale(1.5)", width: 50 }} />
-            </React.Fragment>
-          )}
-          {props.callState === ClientStates.Outgoing && (
-            <React.Fragment>
-              <Phone sx={{ transform: "scale(1.5)", width: 50 }} />
-              <CallMade sx={{ transform: "scale(1.5)", width: 50 }} />
-            </React.Fragment>
-          )}
-          {props.callState === ClientStates.Talking && (
-            <React.Fragment>
-              <PhoneInTalk sx={{ transform: "scale(1.5)", width: 100 }} />
-            </React.Fragment>
-          )}
+        <div className={classes.connectedToContainer}>
+          {chooseAndDisplayIcons()}
           <TextField
-            sx={{ flexGrow: 2 }}
+            className={classes.tnEntryField}
             id={`callout-number`}
             label="Number to Call"
             variant="standard"
@@ -70,9 +104,6 @@ const ConnectedTo = (props: any) => {
             value={tn}
             onChange={updateTn}
             color={tn ? "primary" : "error"}
-            //   InputLabelProps={{
-            //     shrink: false,
-            //   }}
           />
         </div>
       </div>
