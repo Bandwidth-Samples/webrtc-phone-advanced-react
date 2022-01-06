@@ -36,6 +36,8 @@ function App() {
   const [ws, setWs] = useState<W3CWebSocket>();
   const [infoMessage, setInfoMessage] = useState<string>();
 
+  bandwidthRtc.setLogLevel("debug");
+
   // This state variable holds the remote stream object - the audio from the far end
   const [remoteStream, setRemoteStream] = useState<RtcStream>();
 

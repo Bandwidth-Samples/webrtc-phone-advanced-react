@@ -117,9 +117,9 @@ const updateState = (
     // ugh - special case for the state where the tnToDial impacts the state,
     // done to avoid state transitions from all states to valid TN and invalid TN
     nextState =
-      trans.nextState === ClientStates.IdleValid && !tnValid(tnToDial)
+      trans.nextState === ClientStates.IdleValid && tnToDial && !tnValid(tnToDial)
         ? ClientStates.IdleInvalid
-        : trans.nextState === ClientStates.IdleInvalid && tnValid(tnToDial)
+        : trans.nextState === ClientStates.IdleInvalid && tnToDial && tnValid(tnToDial)
         ? ClientStates.IdleValid
         : trans.nextState;
     if (trans.systemEvent && ws) {

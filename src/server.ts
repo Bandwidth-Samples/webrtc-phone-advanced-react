@@ -605,8 +605,6 @@ const handleVoiceCallAnswer = async (req: any, res: any, agent: AgentStatus) => 
   // kick the tunnel to establish the bridge.
   await initiateTunnelRedirectForBridging(agent.voiceTunnel?.callId);
   await updateBrowserClient(agent, ClientEvents.FarAnswer, { tn: req.body.to });
-
-  // await handleBridgeBxmlUpdate(req, res, agent);
 };
 
 /**
