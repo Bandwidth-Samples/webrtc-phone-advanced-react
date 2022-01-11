@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "web phone",
+  "name": "Web page phone with DTMF",
   "icons": [
     {
       "src": "favicon.ico",
