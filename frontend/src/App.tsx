@@ -36,7 +36,8 @@ function App() {
   const [ws, setWs] = useState<W3CWebSocket>();
   const [infoMessage, setInfoMessage] = useState<string>();
 
-  bandwidthRtc.setLogLevel("debug");
+  bandwidthRtc.setLogLevel("info");
+  let debug = false;
 
   // This state variable holds the remote stream object - the audio from the far end
   const [remoteStream, setRemoteStream] = useState<RtcStream>();
@@ -102,11 +103,14 @@ function App() {
     tnToDial?: string,
     wsExists?: boolean
   ) => {
-    if (false) {
-      console.log(header);
-      console.log(" Client State: ", clientState);
-      console.log("My TN: ", myTn, " Other TN: ", tnToDial);
-      console.log("WS:", wsExists, " token: ", token);
+    if (debug) {
+      console.log(
+        `${header} \n` +
+          `   Client State: ${clientState} \n` +
+          `   WebSocket: ${wsExists} \n` +
+          `   My TN: ${myTn}   Other TN: ${tnToDial} \n` +
+          `   token:  ${token}`
+      );
     }
   };
 
@@ -126,8 +130,6 @@ function App() {
         setWs(client);
         connectToSession(parsedMessage.body.token);
         createStreamListeners();
-        dumpClientStateValues("after initialization", clientState, token, myTn, tnToDial, ws !== undefined);
-
         break;
       }
       case ClientEvents.CallIn: {
@@ -157,6 +159,7 @@ function App() {
       default:
         console.log("error - server message not understood: ", parsedMessage);
     }
+    dumpClientStateValues("message handled", clientState, token, myTn, tnToDial, ws !== undefined);
   };
 
   useEffect(() => {
@@ -229,6 +232,7 @@ function App() {
       const newState = updateState(clientState, ClientEvents.CallButton, tnToDial, ws);
       if (newState) setClientState(newState);
       ringing.current.pause();
+      dumpClientStateValues(`Pressing the main button`, clientState, token, myTn, tnToDial, ws !== undefined);
     }
   };
 
