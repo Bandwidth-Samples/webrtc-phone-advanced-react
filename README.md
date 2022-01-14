@@ -1,4 +1,4 @@
-# webrtc-webphone-demo
+# webrtc-phone-advanced-react
 
 A phone in your browser using Typescript and React
 
