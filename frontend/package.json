@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@bandwidth/webrtc-browser": "^0.10.0",
+    "@bandwidth/webrtc-browser": "^0.13.1",
     "@emotion/react": "^11.4.1",
     "@emotion/styled": "^11.3.0",
     "@mui/icons-material": "^5.0.1",
